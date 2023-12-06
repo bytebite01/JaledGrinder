@@ -46,7 +46,7 @@ local loopState = {
     [10] = "wait"
 }
 
-local currentState = 8      -- Change me to value you want, suggested 0 to start when standing next to Jaled Dar in Field of Bone.
+local currentState = 0     -- Change me to value you want, suggested 0 to start when standing next to Jaled Dar in Field of Bone.
 
 -- Purloined from Easy.lua
 local function Campfire()
@@ -245,7 +245,7 @@ local function DoStuff()
             Write.Info('\a-yNEXT STEP: %s=>%s', loopState[currentState], loopState[currentState+1])
             currentState = currentState + 1
         else 
-            Write.Info('\a-yWaiting on people.')
+            Write.Debug('\a-yWaiting on people.')
         end
     end
     --[6] = "startHunter",
@@ -270,7 +270,7 @@ local function DoStuff()
             Write.Info('\a-yNEXT STEP: %s=>%s', loopState[currentState], loopState[currentState+1])
             currentState = currentState + 1
         else 
-            Write.Info('\a-yWaiting on people.')
+            Write.Debug('\a-yWaiting on people.')
         end
     end
 
@@ -279,22 +279,23 @@ local function DoStuff()
         -- update state
         if ( mq.TLO.SpawnCount('group')() > 5 and mq.TLO.Zone.ID() == 453 and os.time() > (startTime + (minutesToRun * 60))  ) then
             mq.delay(50)
-            mq.cmd('/%s resetcamp', MyClassSN)
+            mq.cmdf('/%s resetcamp', MyClassSN)
             mq.delay(50)
-            mq.cmd('/%s mode tank', MyClassSN)
+            mq.cmdf('/%s mode tank', MyClassSN)
             mq.delay(50)
 
             Write.Info('\a-yNEXT STEP: %s=>%s', loopState[currentState], loopState[currentState+1])
             currentState = currentState + 1
         else 
-            Write.Info('\a-yWaiting on people.')
+            Write.Debug('\a-yContinuing to Roam and Murder.')
         end
     end
 
     --[8] = "fellowshipOut",
     if loopState[currentState] == "fellowshipOut" then
         if mq.TLO.Zone.ID() == 453 and mq.TLO.Me.XTarget() < 1 and not mq.TLO.Me.Combat() and mq.TLO.Me.CombatState() ~= 'COOLDOWN' and mq.TLO.SpawnCount('group')() > 1 then
-            stopOthers()
+            -- safe to pause while we are illusioned and out of combat and out of hunter tank mode
+            mq.cmd('/dgza /boxr pause')
             mq.delay(10)
             mq.cmd('/dgza /makemevis')
             mq.delay(10)
@@ -323,7 +324,7 @@ local function DoStuff()
     --[9] = "kickTask",
     if loopState[currentState] == "kickTask" then
         -- make sure everyone is iksar illusioned
-        mq.cmd('/dgga /useitem bone mask')
+        mq.cmd('/dgga /useitem %s', IksarMask)
         mq.delay('4s')
         mq.cmd('/dgga /taskquit')
         -- make sure in field of bone
@@ -365,13 +366,12 @@ while DoLoop do
     mq.doevents()
     if lastUpdateTime + 60 < os.time() then
         lastUpdateTime = os.time()
-        mq.cmdf("/echo State is: %s", currentState)
         Write.Info('\a-yCurrent State: %s', loopState[currentState])
         Write.Info('\a-yThis run duration: %d', os.time() - startTime)
         Write.Info('\a-yThis run remaining: %d', (startTime + (minutesToRun * 60) - os.time()))
     end
 
-    -- A little bit of a restart ability if dies in zone.  basically just starts off buffing and resetting timer in there.
+    -- A little bit of a restart ability if script dies in zone.  Basically just starts off buffing and resetting timer in there.
     if mq.TLO.Zone.ID() == 453 and currentState < 4 then
         -- Todo abstract this
         currentState = 4
