@@ -5,6 +5,7 @@
 -- Change minutesToRun to change cycle length, don't go less than 15 for Fellowship Cooldown.
 -- Change buffingMinutes to allow more or less time at the start of a cycle.
 -- Edit to test git integration 0.0.2
+-- Edit to test git integration 0.0.3
 
 
 
