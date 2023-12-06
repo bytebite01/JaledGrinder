@@ -1,13 +1,11 @@
--- bytebite01 2023/12/05
+-- bytebite01 2023/12/06
 -- Script to recycle instances of Jaled Dar's Price of Knowledge.
 -- Assumes use of CWTN and a full group.  
 -- Bone Mask of Ancient Iksar a requirement right now to avoid invis requirements to zone in.
+
 -- Change minutesToRun to change cycle length, don't go less than 15 for Fellowship Cooldown.
 -- Change buffingMinutes to allow more or less time at the start of a cycle.
--- Edit to test git integration 0.0.2
--- Edit to test git integration 0.0.3
--- Edit to test git integration 0.0.4
--- Edit to test git integration 0.0.5
+
 
 
 
@@ -20,7 +18,7 @@ Write.prefix = 'PriceOfKnowledge'
 Write.loglevel = 'info'
 
 ----------------------CONFIG ELEMENTS--------------------
-local minutesToRun = 50         -- Suggested 50 to avoid recasts on the bone mask.
+local minutesToRun = 30         -- Suggested 50 to avoid recasts on the bone mask.
 local buffingMinutes = 1  --  How ever long you want you group to wait before switching from Tank to Hunter
 ---------------------------------------------------------
 
@@ -53,22 +51,66 @@ local currentState = 0     -- Change me to value you want, suggested 0 to start 
 
 -- Purloined from Easy.lua
 local function Campfire()
+
+    -- Destroy our current campfire if we have one and I'm not dead.
+    if mq.TLO.Me.Fellowship.Campfire() == true and not mq.TLO.Me.Hovering() then
+
+        -- Open fellowship window.
+        if (not mq.TLO.Window('FellowshipWnd').Open()) then mq.TLO.Window('FellowshipWnd').DoOpen() end
+        mq.delay(1000)
+
+        -- Pick the campfire tab
+        mq.TLO.Window('FellowshipWnd/FP_Subwindows').SetCurrentTab(2)
+        mq.delay(1000)
+
+        -- Click destroy campsite.
+        mq.TLO.Window('FellowshipWnd/FP_Subwindows/FP_DestroyCampsite').LeftMouseUp()
+        mq.delay(5000, function ()
+            return mq.TLO.Window('ConfirmationDialogBox').Open()
+        end)
+        if (mq.TLO.Window('ConfirmationDialogBox').Open()) then
+            mq.TLO.Window('ConfirmationDialogBox/Yes_Button').LeftMouseUp()
+        end
+
+        -- Wait a bit to make sure campfire gone
+        mq.delay(5000, function ()
+            return not mq.TLO.Me.Fellowship.Campfire()
+        end)
+    end
+
+    -- We shouldn't have any campfire, and not be dead, and 2 more fellowship members close
     if mq.TLO.Me.Fellowship.Campfire() == false and not mq.TLO.Me.Hovering() and mq.TLO.SpawnCount('radius 50 fellowship')() > 2 then
-        mq.cmd('/windowstate FellowshipWnd open')
+        
+        -- open the fellowship window if it isn't already
+        if (not mq.TLO.Window('FellowshipWnd').Open()) then mq.TLO.Window('FellowshipWnd').DoOpen() end
         mq.delay(1000)
-        mq.cmd('/nomodkey /notify FellowshipWnd FP_Subwindows tabselect 2')
+
+        -- Pick the campfire tab
+        mq.TLO.Window('FellowshipWnd/FP_Subwindows').SetCurrentTab(2)
         mq.delay(1000)
-        mq.cmd('/nomodkey /notify FellowshipWnd FP_RefreshList leftmouseup')
+
+        -- Click refresh list.
+        mq.TLO.Window('FellowshipWnd/FP_Subwindows/FP_RefreshList').LeftMouseUp()
         mq.delay(1000)
-        mq.cmd('/nomodkey /notify FellowshipWnd FP_CampsiteKitList listselect 1')
+
+        -- Pick the first item in list
+        mq.TLO.Window('FellowshipWnd/FP_Subwindows/FP_CampsiteKitList').Select(1)
         mq.delay(1000)
-        mq.cmd('/nomodkey /notify FellowshipWnd FP_CreateCampsite leftmouseup')
+        
+        -- Click create camp
+        mq.TLO.Window('FellowshipWnd/FP_Subwindows/FP_CreateCampsite').LeftMouseUp()
+        mq.delay(5000, function ()
+            return mq.TLO.Me.Fellowship.Campfire()
+        end)
         mq.delay(1000)
-        mq.cmd('/windowstate FellowshipWnd close')
-        mq.delay(1000)
+        
+        mq.TLO.Window('FellowshipWnd').DoClose()
         if mq.TLO.Me.Fellowship.Campfire() then
             Write.Info('\a-yWe got a fire going.')
+        else
+            Write.Warn('\a-yEnd of campfire function but no campfire.  Continuing but you\'ll have to wait to get kicked.')
         end
+
         mq.delay(1000)
     end
 end
@@ -304,6 +346,7 @@ local function DoStuff()
             mq.delay(10)
             mq.cmd('/dgze /useitem fellowship')
             mq.delay(10)
+            mq.cmd('/dgze /taskquit')
         end
 
         if mq.TLO.SpawnCount('group')() == 1 and mq.TLO.Zone.ID() == 453 then
@@ -312,6 +355,7 @@ local function DoStuff()
             mq.delay(10)
             mq.cmd('/useitem fellowship')
             mq.delay(10)
+            mq.cmd('/taskquit')
         end
 
         -- update state
@@ -320,7 +364,7 @@ local function DoStuff()
             Write.Info('\a-yNEXT STEP: %s=>%s', loopState[currentState], loopState[currentState+1])
             currentState = currentState + 1
         else 
-            Write.Info('\a-yWaiting on people.')
+            Write.Info('\a-yWaiting on everyone to be in Field of Bone together.')
         end
     end
 
@@ -342,7 +386,7 @@ local function DoStuff()
             Write.Info('\a-yNEXT STEP: %s=>%s', loopState[currentState], loopState[currentState+1])
             currentState = currentState + 1
         else 
-            Write.Info('\a-yWaiting on people.')
+            Write.Info('\a-yWaiting on everyone to be together in field of bone and close to jaled.')
         end
     end
 
@@ -357,7 +401,7 @@ local function DoStuff()
             Write.Info('\a-yNEXT STEP: %s=>%s', loopState[currentState], loopState[0])
             currentState = 0
         else 
-            Write.Info('\a-yWaiting on people.')
+            Write.Info('\a-yFinal checks.')
         end
     end
 
