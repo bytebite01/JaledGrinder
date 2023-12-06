@@ -4,7 +4,7 @@
 -- Bone Mask of Ancient Iksar a requirement right now to avoid invis requirements to zone in.
 -- Change minutesToRun to change cycle length, don't go less than 15 for Fellowship Cooldown.
 -- Change buffingMinutes to allow more or less time at the start of a cycle.
--- Edit to test updates to site using git integration again.
+-- Edit to test git integration 0.0.2
 
 
 
